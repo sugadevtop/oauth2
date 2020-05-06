@@ -60,7 +60,7 @@ Future<Client> resourceOwnerPasswordGrant(
 
   var body = {
     "grant_type": "password",
-    "email": email,
+    "username": email,
     "password": password,
     "provider": "agents"
   };
