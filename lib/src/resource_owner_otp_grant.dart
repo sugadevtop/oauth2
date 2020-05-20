@@ -62,7 +62,7 @@ Future<Client> resourceOwnerOtpGrant(
     "grant_type": "phone_verification_code",
     "phone_number": phoneNumber,
     "otp_code": otp,
-    "provider": "members"
+    "provider": "merchants"
   };
 
   var headers = <String, String>{};
