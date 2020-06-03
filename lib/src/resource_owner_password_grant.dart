@@ -44,8 +44,8 @@ import 'credentials.dart';
 /// format as the [standard JSON response][].
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
-Future<Client> resourceOwnerOtpGrant(
-    Uri authorizationEndpoint, String phoneNumber, String otp,
+Future<Client> resourceOwnerPasswordGrant(
+    Uri authorizationEndpoint, String username, String password,
     {String identifier,
     String secret,
     Iterable<String> scopes,
@@ -53,16 +53,15 @@ Future<Client> resourceOwnerOtpGrant(
     CredentialsRefreshedCallback onCredentialsRefreshed,
     http.Client httpClient,
     String delimiter,
-    Map<String, dynamic> getParameters(
-        MediaType contentType, String body)}) async {
+    Map<String, dynamic> Function(MediaType contentType, String body)
+        getParameters}) async {
   delimiter ??= ' ';
-  var startTime = new DateTime.now();
+  var startTime = DateTime.now();
 
   var body = {
-    "grant_type": "phone_verification_code",
-    "phone_number": phoneNumber,
-    "otp_code": otp,
-    "provider": "users"
+    'grant_type': 'password',
+    'username': username,
+    'password': password
   };
 
   var headers = <String, String>{};
@@ -76,17 +75,18 @@ Future<Client> resourceOwnerOtpGrant(
     }
   }
 
-  if (scopes != null && scopes.isNotEmpty)
+  if (scopes != null && scopes.isNotEmpty) {
     body['scope'] = scopes.join(delimiter);
+  }
 
-  if (httpClient == null) httpClient = new http.Client();
+  httpClient ??= http.Client();
   var response = await httpClient.post(authorizationEndpoint,
       headers: headers, body: body);
 
   var credentials = await handleAccessTokenResponse(
       response, authorizationEndpoint, startTime, scopes, delimiter,
       getParameters: getParameters);
-  return new Client(credentials,
+  return Client(credentials,
       identifier: identifier,
       secret: secret,
       httpClient: httpClient,

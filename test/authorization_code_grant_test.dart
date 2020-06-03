@@ -17,8 +17,8 @@ void main() {
   ExpectClient client;
   oauth2.AuthorizationCodeGrant grant;
   setUp(() {
-    client = new ExpectClient();
-    grant = new oauth2.AuthorizationCodeGrant(
+    client = ExpectClient();
+    grant = oauth2.AuthorizationCodeGrant(
         'identifier',
         Uri.parse('https://example.com/authorization'),
         Uri.parse('https://example.com/token'),
@@ -30,10 +30,13 @@ void main() {
     test('builds the correct URL', () {
       expect(
           grant.getAuthorizationUrl(redirectUrl).toString(),
-          equals('https://example.com/authorization'
-              '?response_type=code'
-              '&client_id=identifier'
-              '&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'));
+          allOf([
+            startsWith('https://example.com/authorization?response_type=code'),
+            contains('&client_id=identifier'),
+            contains('&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'),
+            matches(r'&code_challenge=[A-Za-z0-9\+\/\-\_]{43}'),
+            contains('&code_challenge_method=S256')
+          ]));
     });
 
     test('builds the correct URL with scopes', () {
@@ -41,15 +44,18 @@ void main() {
           .getAuthorizationUrl(redirectUrl, scopes: ['scope', 'other/scope']);
       expect(
           authorizationUrl.toString(),
-          equals('https://example.com/authorization'
-              '?response_type=code'
-              '&client_id=identifier'
-              '&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'
-              '&scope=scope+other%2Fscope'));
+          allOf([
+            startsWith('https://example.com/authorization?response_type=code'),
+            contains('&client_id=identifier'),
+            contains('&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'),
+            matches(r'&code_challenge=[A-Za-z0-9\+\/\-\_]{43}'),
+            contains('&code_challenge_method=S256'),
+            contains('&scope=scope+other%2Fscope')
+          ]));
     });
 
     test('separates scopes with the correct delimiter', () {
-      var grant = new oauth2.AuthorizationCodeGrant(
+      var grant = oauth2.AuthorizationCodeGrant(
           'identifier',
           Uri.parse('https://example.com/authorization'),
           Uri.parse('https://example.com/token'),
@@ -60,11 +66,14 @@ void main() {
           .getAuthorizationUrl(redirectUrl, scopes: ['scope', 'other/scope']);
       expect(
           authorizationUrl.toString(),
-          equals('https://example.com/authorization'
-              '?response_type=code'
-              '&client_id=identifier'
-              '&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'
-              '&scope=scope_other%2Fscope'));
+          allOf([
+            startsWith('https://example.com/authorization?response_type=code'),
+            contains('&client_id=identifier'),
+            contains('&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'),
+            matches(r'&code_challenge=[A-Za-z0-9\+\/\-\_]{43}'),
+            contains('&code_challenge_method=S256'),
+            contains('&scope=scope_other%2Fscope')
+          ]));
     });
 
     test('builds the correct URL with state', () {
@@ -72,15 +81,18 @@ void main() {
           grant.getAuthorizationUrl(redirectUrl, state: 'state');
       expect(
           authorizationUrl.toString(),
-          equals('https://example.com/authorization'
-              '?response_type=code'
-              '&client_id=identifier'
-              '&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'
-              '&state=state'));
+          allOf([
+            startsWith('https://example.com/authorization?response_type=code'),
+            contains('&client_id=identifier'),
+            contains('&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'),
+            matches(r'&code_challenge=[A-Za-z0-9\+\/\-\_]{43}'),
+            contains('&code_challenge_method=S256'),
+            contains('&state=state')
+          ]));
     });
 
     test('merges with existing query parameters', () {
-      grant = new oauth2.AuthorizationCodeGrant(
+      grant = oauth2.AuthorizationCodeGrant(
           'identifier',
           Uri.parse('https://example.com/authorization?query=value'),
           Uri.parse('https://example.com/token'),
@@ -90,11 +102,14 @@ void main() {
       var authorizationUrl = grant.getAuthorizationUrl(redirectUrl);
       expect(
           authorizationUrl.toString(),
-          equals('https://example.com/authorization'
-              '?query=value'
-              '&response_type=code'
-              '&client_id=identifier'
-              '&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'));
+          allOf([
+            startsWith('https://example.com/authorization?query=value'),
+            contains('&response_type=code'),
+            contains('&client_id=identifier'),
+            contains('&redirect_uri=http%3A%2F%2Fexample.com%2Fredirect'),
+            matches(r'&code_challenge=[A-Za-z0-9\+\/\-\_]{43}'),
+            contains('&code_challenge_method=S256'),
+          ]));
     });
 
     test("can't be called twice", () {
@@ -148,15 +163,17 @@ void main() {
         expect(request.url.toString(), equals(grant.tokenEndpoint.toString()));
         expect(
             request.bodyFields,
-            equals({
-              'grant_type': 'authorization_code',
-              'code': 'auth code',
-              'redirect_uri': redirectUrl.toString()
-            }));
+            allOf([
+              containsPair('grant_type', 'authorization_code'),
+              containsPair('code', 'auth code'),
+              containsPair('redirect_uri', redirectUrl.toString()),
+              containsPair(
+                  'code_verifier', matches(r'[A-Za-z0-9\-\.\_\~]{128}'))
+            ]));
         expect(request.headers,
-            containsPair("Authorization", "Basic aWRlbnRpZmllcjpzZWNyZXQ="));
+            containsPair('Authorization', 'Basic aWRlbnRpZmllcjpzZWNyZXQ='));
 
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode({
               'access_token': 'access token',
               'token_type': 'bearer',
@@ -190,15 +207,17 @@ void main() {
         expect(request.url.toString(), equals(grant.tokenEndpoint.toString()));
         expect(
             request.bodyFields,
-            equals({
-              'grant_type': 'authorization_code',
-              'code': 'auth code',
-              'redirect_uri': redirectUrl.toString()
-            }));
+            allOf([
+              containsPair('grant_type', 'authorization_code'),
+              containsPair('code', 'auth code'),
+              containsPair('redirect_uri', redirectUrl.toString()),
+              containsPair(
+                  'code_verifier', matches(r'[A-Za-z0-9\-\.\_\~]{128}'))
+            ]));
         expect(request.headers,
-            containsPair("Authorization", "Basic aWRlbnRpZmllcjpzZWNyZXQ="));
+            containsPair('Authorization', 'Basic aWRlbnRpZmllcjpzZWNyZXQ='));
 
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode({
               'access_token': 'access token',
               'token_type': 'bearer',
@@ -215,10 +234,10 @@ void main() {
     });
   });
 
-  group("with basicAuth: false", () {
+  group('with basicAuth: false', () {
     setUp(() {
-      client = new ExpectClient();
-      grant = new oauth2.AuthorizationCodeGrant(
+      client = ExpectClient();
+      grant = oauth2.AuthorizationCodeGrant(
           'identifier',
           Uri.parse('https://example.com/authorization'),
           Uri.parse('https://example.com/token'),
@@ -235,15 +254,17 @@ void main() {
         expect(request.url.toString(), equals(grant.tokenEndpoint.toString()));
         expect(
             request.bodyFields,
-            equals({
-              'grant_type': 'authorization_code',
-              'code': 'auth code',
-              'redirect_uri': redirectUrl.toString(),
-              'client_id': 'identifier',
-              'client_secret': 'secret'
-            }));
+            allOf([
+              containsPair('grant_type', 'authorization_code'),
+              containsPair('code', 'auth code'),
+              containsPair('redirect_uri', redirectUrl.toString()),
+              containsPair(
+                  'code_verifier', matches(r'[A-Za-z0-9\-\.\_\~]{128}')),
+              containsPair('client_id', 'identifier'),
+              containsPair('client_secret', 'secret')
+            ]));
 
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode({
               'access_token': 'access token',
               'token_type': 'bearer',
@@ -265,15 +286,17 @@ void main() {
         expect(request.url.toString(), equals(grant.tokenEndpoint.toString()));
         expect(
             request.bodyFields,
-            equals({
-              'grant_type': 'authorization_code',
-              'code': 'auth code',
-              'redirect_uri': redirectUrl.toString(),
-              'client_id': 'identifier',
-              'client_secret': 'secret'
-            }));
+            allOf([
+              containsPair('grant_type', 'authorization_code'),
+              containsPair('code', 'auth code'),
+              containsPair('redirect_uri', redirectUrl.toString()),
+              containsPair(
+                  'code_verifier', matches(r'[A-Za-z0-9\-\.\_\~]{128}')),
+              containsPair('client_id', 'identifier'),
+              containsPair('client_secret', 'secret')
+            ]));
 
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode({
               'access_token': 'access token',
               'token_type': 'bearer',
@@ -293,7 +316,7 @@ void main() {
   group('onCredentialsRefreshed', () {
     test('is correctly propagated', () async {
       var isCallbackInvoked = false;
-      var grant = new oauth2.AuthorizationCodeGrant(
+      var grant = oauth2.AuthorizationCodeGrant(
           'identifier',
           Uri.parse('https://example.com/authorization'),
           Uri.parse('https://example.com/token'),
@@ -305,12 +328,12 @@ void main() {
 
       grant.getAuthorizationUrl(redirectUrl);
       client.expectRequest((request) {
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode({
               'access_token': 'access token',
               'token_type': 'bearer',
-              "expires_in": -3600,
-              "refresh_token": "refresh token",
+              'expires_in': -3600,
+              'refresh_token': 'refresh token',
             }),
             200,
             headers: {'content-type': 'application/json'}));
@@ -319,7 +342,7 @@ void main() {
       var oauth2Client = await grant.handleAuthorizationCode('auth code');
 
       client.expectRequest((request) {
-        return new Future.value(new http.Response(
+        return Future.value(http.Response(
             jsonEncode(
                 {'access_token': 'new access token', 'token_type': 'bearer'}),
             200,
@@ -327,10 +350,10 @@ void main() {
       });
 
       client.expectRequest((request) {
-        return new Future.value(new http.Response('good job', 200));
+        return Future.value(http.Response('good job', 200));
       });
 
-      await oauth2Client.read(Uri.parse("http://example.com/resource"));
+      await oauth2Client.read(Uri.parse('http://example.com/resource'));
 
       expect(isCallbackInvoked, equals(true));
     });
