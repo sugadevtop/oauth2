@@ -254,4 +254,58 @@ class Credentials {
         scopes: credentials.scopes,
         expiration: credentials.expiration);
   }
+
+  Future<Credentials> refreshWithBody(
+      {String identifier,
+        Map<String, dynamic> body,
+        String secret,
+        Iterable<String> newScopes,
+        bool basicAuth = true,
+        http.Client httpClient}) async {
+    var scopes = this.scopes;
+    if (newScopes != null) scopes = newScopes.toList();
+    scopes ??= [];
+    httpClient ??= http.Client();
+
+    if (identifier == null && secret != null) {
+      throw ArgumentError('secret may not be passed without identifier.');
+    }
+
+    var startTime = DateTime.now();
+    if (refreshToken == null) {
+      throw StateError("Can't refresh credentials without a refresh "
+          'token.');
+    } else if (tokenEndpoint == null) {
+      throw StateError("Can't refresh credentials without a token "
+          'endpoint.');
+    }
+
+    var headers = <String, String>{};
+
+    body.addAll({'grant_type': 'refresh_token', 'refresh_token': refreshToken});
+    if (scopes.isNotEmpty) body['scope'] = scopes.join(_delimiter);
+
+    if (basicAuth && secret != null) {
+      headers['Authorization'] = basicAuthHeader(identifier, secret);
+    } else {
+      if (identifier != null) body['client_id'] = identifier;
+      if (secret != null) body['client_secret'] = secret;
+    }
+
+    var response =
+    await httpClient.post(tokenEndpoint, headers: headers, body: body);
+    var credentials = await handleAccessTokenResponse(
+        response, tokenEndpoint, startTime, scopes, _delimiter,
+        getParameters: _getParameters);
+
+    // The authorization server may issue a new refresh token. If it doesn't,
+    // we should re-use the one we already have.
+    if (credentials.refreshToken != null) return credentials;
+    return Credentials(credentials.accessToken,
+        refreshToken: refreshToken,
+        idToken: credentials.idToken,
+        tokenEndpoint: credentials.tokenEndpoint,
+        scopes: credentials.scopes,
+        expiration: credentials.expiration);
+  }
 }
