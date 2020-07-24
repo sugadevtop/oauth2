@@ -108,6 +108,7 @@ Future<Client> resourceOwnerGrant(
   var startTime = DateTime.now();
 
   var headers = <String, String>{};
+  headers['Accept'] = "application/json";
 
   if (identifier != null) {
     if (basicAuth) {
