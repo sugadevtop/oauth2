@@ -44,17 +44,18 @@ import 'credentials.dart';
 /// format as the [standard JSON response][].
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
-Future<Client> resourceOwnerPasswordGrant(
-    Uri authorizationEndpoint, String username, String password,
+Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
+    String username, String password,
     {String identifier,
-    String secret,
-    Iterable<String> scopes,
-    bool basicAuth = true,
-    CredentialsRefreshedCallback onCredentialsRefreshed,
-    http.Client httpClient,
-    String delimiter,
-    Map<String, dynamic> Function(MediaType contentType, String body)
-        getParameters}) async {
+      String secret,
+      Iterable<Map<String, dynamic>> customHeaders,
+      Iterable<String> scopes,
+      bool basicAuth = true,
+      CredentialsRefreshedCallback onCredentialsRefreshed,
+      http.Client httpClient,
+      String delimiter,
+      Map<String, dynamic> Function(MediaType contentType, String body)
+      getParameters}) async {
   delimiter ??= ' ';
   var startTime = DateTime.now();
 
@@ -65,6 +66,10 @@ Future<Client> resourceOwnerPasswordGrant(
   };
 
   var headers = <String, String>{};
+
+  if(customHeaders != null) {
+    headers.addAll(customHeaders);
+  }
 
   if (identifier != null) {
     if (basicAuth) {
@@ -93,8 +98,8 @@ Future<Client> resourceOwnerPasswordGrant(
       onCredentialsRefreshed: onCredentialsRefreshed);
 }
 
-Future<Client> resourceOwnerGrant(
-    Uri authorizationEndpoint, Map<String, dynamic> body,
+Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
+    Map<String, dynamic> body,
     {String identifier,
       String secret,
       Iterable<String> scopes,
