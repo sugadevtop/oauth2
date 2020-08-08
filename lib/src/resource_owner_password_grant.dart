@@ -8,9 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'client.dart';
+import 'credentials.dart';
 import 'handle_access_token_response.dart';
 import 'utils.dart';
-import 'credentials.dart';
 
 /// Obtains credentials using a [resource owner password grant](https://tools.ietf.org/html/rfc6749#section-1.3.3).
 ///
@@ -44,18 +44,18 @@ import 'credentials.dart';
 /// format as the [standard JSON response][].
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
-Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
-    String username, String password,
+Future<Client> resourceOwnerPasswordGrant(
+    Uri authorizationEndpoint, String username, String password,
     {String identifier,
-      String secret,
-      Iterable<Map<String, dynamic>> customHeaders,
-      Iterable<String> scopes,
-      bool basicAuth = true,
-      CredentialsRefreshedCallback onCredentialsRefreshed,
-      http.Client httpClient,
-      String delimiter,
-      Map<String, dynamic> Function(MediaType contentType, String body)
-      getParameters}) async {
+    String secret,
+    Map<String, dynamic> customHeaders,
+    Iterable<String> scopes,
+    bool basicAuth = true,
+    CredentialsRefreshedCallback onCredentialsRefreshed,
+    http.Client httpClient,
+    String delimiter,
+    Map<String, dynamic> Function(MediaType contentType, String body)
+        getParameters}) async {
   delimiter ??= ' ';
   var startTime = DateTime.now();
 
@@ -67,7 +67,7 @@ Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
 
   var headers = <String, String>{};
 
-  if(customHeaders != null) {
+  if (customHeaders != null) {
     headers.addAll(customHeaders);
   }
 
@@ -99,23 +99,22 @@ Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
 }
 
 Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
-    Map<String, dynamic> body,
-    Iterable<Map<String, dynamic>> customHeaders,
+    Map<String, dynamic> body, Map<String, dynamic> customHeaders,
     {String identifier,
-      String secret,
-      Iterable<String> scopes,
-      bool basicAuth = true,
-      CredentialsRefreshedCallback onCredentialsRefreshed,
-      http.Client httpClient,
-      String delimiter,
-      Map<String, dynamic> Function(MediaType contentType, String body)
-      getParameters}) async {
+    String secret,
+    Iterable<String> scopes,
+    bool basicAuth = true,
+    CredentialsRefreshedCallback onCredentialsRefreshed,
+    http.Client httpClient,
+    String delimiter,
+    Map<String, dynamic> Function(MediaType contentType, String body)
+        getParameters}) async {
   delimiter ??= ' ';
   var startTime = DateTime.now();
 
   var headers = <String, String>{};
 
-  if(customHeaders != null) {
+  if (customHeaders != null) {
     headers.addAll(customHeaders);
   }
 
