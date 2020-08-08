@@ -44,25 +44,73 @@ import 'credentials.dart';
 /// format as the [standard JSON response][].
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
-Future<Client> resourceOwnerOtpGrant(
-    Uri authorizationEndpoint, String phoneNumber, String phoneCode, String otp,
+Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
+    String username, String password,
     {String identifier,
-    String secret,
-    Iterable<String> scopes,
-    bool basicAuth = true,
-    CredentialsRefreshedCallback onCredentialsRefreshed,
-    http.Client httpClient,
-    String delimiter,
-    Map<String, dynamic> getParameters(
-        MediaType contentType, String body)}) async {
+      String secret,
+      Iterable<Map<String, dynamic>> customHeaders,
+      Iterable<String> scopes,
+      bool basicAuth = true,
+      CredentialsRefreshedCallback onCredentialsRefreshed,
+      http.Client httpClient,
+      String delimiter,
+      Map<String, dynamic> Function(MediaType contentType, String body)
+      getParameters}) async {
   delimiter ??= ' ';
-  var startTime = new DateTime.now();
+  var startTime = DateTime.now();
 
   var body = {
-    "phone_number": phoneNumber,
-    "otp_code": otp,
-    "phonecode": phoneCode
+    'grant_type': 'password',
+    'username': username,
+    'password': password
   };
+
+  var headers = <String, String>{};
+
+  if(customHeaders != null) {
+    headers.addAll(customHeaders);
+  }
+
+  if (identifier != null) {
+    if (basicAuth) {
+      headers['Authorization'] = basicAuthHeader(identifier, secret);
+    } else {
+      body['client_id'] = identifier;
+      if (secret != null) body['client_secret'] = secret;
+    }
+  }
+
+  if (scopes != null && scopes.isNotEmpty) {
+    body['scope'] = scopes.join(delimiter);
+  }
+
+  httpClient ??= http.Client();
+  var response = await httpClient.post(authorizationEndpoint,
+      headers: headers, body: body);
+
+  var credentials = await handleAccessTokenResponse(
+      response, authorizationEndpoint, startTime, scopes, delimiter,
+      getParameters: getParameters);
+  return Client(credentials,
+      identifier: identifier,
+      secret: secret,
+      httpClient: httpClient,
+      onCredentialsRefreshed: onCredentialsRefreshed);
+}
+
+Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
+    Map<String, dynamic> body,
+    {String identifier,
+      String secret,
+      Iterable<String> scopes,
+      bool basicAuth = true,
+      CredentialsRefreshedCallback onCredentialsRefreshed,
+      http.Client httpClient,
+      String delimiter,
+      Map<String, dynamic> Function(MediaType contentType, String body)
+      getParameters}) async {
+  delimiter ??= ' ';
+  var startTime = DateTime.now();
 
   var headers = <String, String>{};
 
@@ -75,17 +123,18 @@ Future<Client> resourceOwnerOtpGrant(
     }
   }
 
-  if (scopes != null && scopes.isNotEmpty)
+  if (scopes != null && scopes.isNotEmpty) {
     body['scope'] = scopes.join(delimiter);
+  }
 
-  if (httpClient == null) httpClient = new http.Client();
+  httpClient ??= http.Client();
   var response = await httpClient.post(authorizationEndpoint,
       headers: headers, body: body);
 
   var credentials = await handleAccessTokenResponse(
       response, authorizationEndpoint, startTime, scopes, delimiter,
       getParameters: getParameters);
-  return new Client(credentials,
+  return Client(credentials,
       identifier: identifier,
       secret: secret,
       httpClient: httpClient,
