@@ -100,6 +100,7 @@ Future<Client> resourceOwnerPasswordGrant(Uri authorizationEndpoint,
 
 Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
     Map<String, dynamic> body,
+    Iterable<Map<String, dynamic>> customHeaders,
     {String identifier,
       String secret,
       Iterable<String> scopes,
@@ -113,6 +114,10 @@ Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
   var startTime = DateTime.now();
 
   var headers = <String, String>{};
+
+  if(customHeaders != null) {
+    headers.addAll(customHeaders);
+  }
 
   if (identifier != null) {
     if (basicAuth) {
