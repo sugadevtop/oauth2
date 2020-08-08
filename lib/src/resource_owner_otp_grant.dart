@@ -45,7 +45,7 @@ import 'credentials.dart';
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
 Future<Client> resourceOwnerOtpGrant(
-    Uri authorizationEndpoint, String phoneNumber, String otp,
+    Uri authorizationEndpoint, String phoneNumber, String phoneCode, String otp,
     {String identifier,
     String secret,
     Iterable<String> scopes,
@@ -59,10 +59,9 @@ Future<Client> resourceOwnerOtpGrant(
   var startTime = new DateTime.now();
 
   var body = {
-    "grant_type": "phone_verification_code",
     "phone_number": phoneNumber,
     "otp_code": otp,
-    "provider": "members"
+    "phonecode": phoneCode
   };
 
   var headers = <String, String>{};
