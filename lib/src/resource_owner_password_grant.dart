@@ -49,6 +49,9 @@ Future<Client> resourceOwnerPasswordGrant(
     {String? identifier,
     String? secret,
     Iterable<String>? scopes,
+    String grantType = 'password',
+    String usernameKey = 'username',
+    String passwordKey = 'password',
     bool basicAuth = true,
     CredentialsRefreshedCallback? onCredentialsRefreshed,
     http.Client? httpClient,
@@ -59,9 +62,9 @@ Future<Client> resourceOwnerPasswordGrant(
   var startTime = DateTime.now();
 
   var body = {
-    'grant_type': 'password',
-    'username': username,
-    'password': password
+    'grant_type': grantType,
+    usernameKey: username,
+    passwordKey: password
   };
 
   var headers = <String, String>{};
