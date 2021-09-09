@@ -8,9 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'client.dart';
+import 'credentials.dart';
 import 'handle_access_token_response.dart';
 import 'utils.dart';
-import 'credentials.dart';
 
 /// Obtains credentials using a [resource owner password grant](https://tools.ietf.org/html/rfc6749#section-1.3.3).
 ///
@@ -48,6 +48,7 @@ Future<Client> resourceOwnerPasswordGrant(
     Uri authorizationEndpoint, String username, String password,
     {String identifier,
     String secret,
+    Map<String, dynamic> customHeaders,
     Iterable<String> scopes,
     bool basicAuth = true,
     CredentialsRefreshedCallback onCredentialsRefreshed,
@@ -65,6 +66,57 @@ Future<Client> resourceOwnerPasswordGrant(
   };
 
   var headers = <String, String>{};
+
+  if (customHeaders != null) {
+    headers.addAll(customHeaders);
+  }
+
+  if (identifier != null) {
+    if (basicAuth) {
+      headers['Authorization'] = basicAuthHeader(identifier, secret);
+    } else {
+      body['client_id'] = identifier;
+      if (secret != null) body['client_secret'] = secret;
+    }
+  }
+
+  if (scopes != null && scopes.isNotEmpty) {
+    body['scope'] = scopes.join(delimiter);
+  }
+
+  httpClient ??= http.Client();
+  var response = await httpClient.post(authorizationEndpoint,
+      headers: headers, body: body);
+
+  var credentials = await handleAccessTokenResponse(
+      response, authorizationEndpoint, startTime, scopes, delimiter,
+      getParameters: getParameters);
+  return Client(credentials,
+      identifier: identifier,
+      secret: secret,
+      httpClient: httpClient,
+      onCredentialsRefreshed: onCredentialsRefreshed);
+}
+
+Future<Client> resourceOwnerGrant(Uri authorizationEndpoint,
+    Map<String, dynamic> body, Map<String, dynamic> customHeaders,
+    {String identifier,
+    String secret,
+    Iterable<String> scopes,
+    bool basicAuth = true,
+    CredentialsRefreshedCallback onCredentialsRefreshed,
+    http.Client httpClient,
+    String delimiter,
+    Map<String, dynamic> Function(MediaType contentType, String body)
+        getParameters}) async {
+  delimiter ??= ' ';
+  var startTime = DateTime.now();
+
+  var headers = <String, String>{};
+
+  if (customHeaders != null) {
+    headers.addAll(customHeaders);
+  }
 
   if (identifier != null) {
     if (basicAuth) {
